@@ -1,0 +1,12 @@
+scipy>=0.18
+matplotlib>=2.0.2
+ipython>=5.1
+jupyter>=1.0.0
+pandas>=0.18.1
+tqdm>=4.18
+colorama>=0.3.7
+Markdown>=2.6
+multiprocessing-on-dill>=3.5.0a4
+scikit-learn>=0.18.2
+keras>=2.2.4
+tensorflow>=1.5.0
