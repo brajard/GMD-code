@@ -11,7 +11,7 @@ Tested on Linux/MacOS<sup>[1](#myfootnote1)</sup>
 1. Prerequisiste: `python3.5+` (suggest setting it up with
 [anaconda](https://www.anaconda.com/download)).
 2. Download [DAPPER v0.8](https://github.com/nansencenter/DAPPER/releases/tag/v0.8) 
-3. Copy the following files in the DAPPER main directory (suggest download the whole [repository](https://github.com/brajard/GMD-code/releases/tag/v0.1)):
+3. Copy the following files in the DAPPER main directory (suggest download the whole [repository](https://github.com/brajard/GMD-code/releases/tag/v1.0)):
    - [utils.py](utils.py)
    - [requirements.txt](requirements.txt)
    - [example.py](example.py)
