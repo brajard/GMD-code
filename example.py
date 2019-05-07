@@ -155,4 +155,3 @@ fig = plot_L96_2D(xsim_true, xsim_surrogate, setup_true.t.tt, labels=['True','Su
 
 # save fig
 fig.savefig(os.path.join(datadir, 'simulation.png'))
-fig.show()

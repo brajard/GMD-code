@@ -1,8 +1,8 @@
 #from DAPPER.mods.Lorenz95.sak08 import setup as setup_lorenz
 import os
 import numpy as np
-from DAPPER.common import simulate, Chronology
-from DAPPER.da_methods import EnKF_N
+from common import simulate, Chronology
+from da_methods import EnKF_N
 
 from utils import setup as setup_lorenz
 from utils import simulate_ens, NNPredictor, SetupBuilder, plot_L96_2D
@@ -87,4 +87,3 @@ xsim_surrogate = simulate_ens(setup, Xinit=x0)
 # plot
 fig = plot_L96_2D(xsim_true, xsim_surrogate, setup_true.t.tt, labels=['True','Surrogate'])
 fig.savefig(os.path.join(datadir, 'simulation.png'))
-fig.show()
