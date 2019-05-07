@@ -1,7 +1,8 @@
+#from DAPPER.mods.Lorenz95.sak08 import setup as setup_lorenz
 import os
 import numpy as np
-from common import simulate, Chronology
-from da_methods import EnKF_N
+from DAPPER.common import simulate, Chronology
+from DAPPER.da_methods import EnKF_N
 
 from utils import setup as setup_lorenz
 from utils import simulate_ens, NNPredictor, SetupBuilder, plot_L96_2D
@@ -18,12 +19,6 @@ ncycle = 40  # Number of cycles
 nepochs_init = 40 # Number of epochs for initializing the weights
 nepochs = 20 # Number of epochs during training in a cycle
 Texpe = 2000 # Length of the experiment in model time unit
-
-# To reduce the time needed to run the experiment (with less accurate results) uncomment the following lines:
-# ncycle = 2
-# nepochs_init = 10
-# nepochs = 5
-# Texpe = 500
 
 datadir = 'example_data'  # Directory where to save the results
 ######################
@@ -51,11 +46,6 @@ setup_true = sb.setup()
 xtrue, yobs = simulate(setup_true)
 # NB: the config can be saved using sb.save(...)
 
-###########################
-# Data assimilation setup #
-###########################
-N = 30  # Size of the ensemble
-config = EnKF_N(N=N)  # DA config
 
 ##########################
 # Machine learning setup #
@@ -73,65 +63,9 @@ param_nn = {'archi': ((24, 5, 'relu', 0.0), (37, 5, 'relu', 0.0)),  # CNN layer 
 }
 nn = NNPredictor(m, **param_nn)
 
-# uncomment the following line to avoid displays during the neural net training:
-# nn._verbfit = 0
+# Load the neural net with  weights
+nn._smodel.load_weights(os.path.join(datadir, 'weights_nn.h5'))
 
-###################
-# Initial weights #
-###################
-
-# interpolate in the observations:
-xobs = sb.ytox(yobs)  # Obs in the state space
-xinterp = sb.interpolate_obs(xobs)
-
-# Calculate the inverse of variance in the loss fuction
-# (1 if there is an obs, 0 otherwise):
-weights = np.logical_not(np.isnan(xobs)).astype(np.float)
-
-# Define a particular machine learning setup for the init
-param_first_nn = param_nn.copy()
-param_first_nn['npred'] = 4
-param_first_nn['Nepochs'] = nepochs_init
-first_nn = NNPredictor(m, **param_first_nn)
-
-# Training
-first_nn.fit((xinterp, weights))
-
-# Save initial weights
-first_nn._smodel.save_weights(os.path.join(datadir, 'weights_init.h5'))
-
-# Load the neural net with initial weight
-nn._smodel.load_weights(os.path.join(datadir, 'weights_init.h5'))
-
-############################
-# Optimize over the cycles #
-############################
-
-for icycle in range(ncycle):
-	############
-	# DA step  #
-	############
-
-	# Surrogate model setup:
-	setup = nn.define_setup(setup_true, noise=std_o)
-	# NB: The setup_true is use only for the observational setup, not for the model definition
-
-	# Run the assimilation:
-	stats = config.assimilate(setup, xtrue, yobs)
-
-	xa = stats.mu.a  # Analysis
-	weights = 1. / (stats.var.a + 0.01)  # Inverse Covariance matrix (only diagonal)
-	# +0.01 to avoid crash if the DA has degenerated to var =0
-
-	############
-	# ML step  #
-	############
-
-	# Fit the neural net
-	nn.fit((xa, weights))
-
-# Save the weights
-nn._smodel.save_weights(os.path.join(datadir, 'weights_nn.h5'))
 
 ########
 # plot #
@@ -152,7 +86,5 @@ xsim_surrogate = simulate_ens(setup, Xinit=x0)
 
 # plot
 fig = plot_L96_2D(xsim_true, xsim_surrogate, setup_true.t.tt, labels=['True','Surrogate'])
-
-# save fig
 fig.savefig(os.path.join(datadir, 'simulation.png'))
 fig.show()
