@@ -85,5 +85,5 @@ xsim_true      = simulate_ens(setup_true, Xinit=x0)
 xsim_surrogate = simulate_ens(setup, Xinit=x0)
 
 # plot
-fig = plot_L96_2D(xsim_true, xsim_surrogate, setup_true.t.tt, labels=['True','Surrogate'])
+fig = plot_L96_2D(xsim_true, xsim_surrogate, 1.67*setup_true.t.tt, labels=['True','Surrogate'])
 fig.savefig(os.path.join(datadir, 'simulation.png'))
