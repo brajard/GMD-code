@@ -10,6 +10,8 @@ from keras import regularizers
 from keras.callbacks import EarlyStopping
 import warnings
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg') #change to activate a GUI matplotlib backend
 from sklearn.linear_model import Ridge
 from tools.randvars import RV, GaussRV
 from tools.math import Id_mat
@@ -728,8 +730,8 @@ def plot_L96_2D(xx,xxpred,tt,labels,vmin=None,vmax=None,vdelta=None):
 		cax [i] = divider[i].append_axes('right', size='5%', pad=0.05)
 
 	delta= dict()
-	delta[0] = ax[0].imshow(xx.T,vmin=vmin,vmax =vmax,extent=[tmin,tmax,0,m],aspect='auto')
-	delta[1] = ax[1].imshow(xxpred.T,vmin=vmin,vmax=vmax,extent=[tmin,tmax,0,m],aspect='auto')
+	delta[0] = ax[0].imshow(xx.T,cmap=plt.get_cmap('viridis'),vmin=vmin,vmax =vmax,extent=[tmin,tmax,0,m],aspect='auto')
+	delta[1] = ax[1].imshow(xxpred.T,cmap=plt.get_cmap('viridis'),vmin=vmin,vmax=vmax,extent=[tmin,tmax,0,m],aspect='auto')
 	delta[2] = ax[2].imshow(xxpred.T- xx.T,cmap=plt.get_cmap('bwr'),
 		extent=[tmin,tmax,0,m],aspect='auto',vmin=-vdelta,vmax=vdelta)
 	ax[0].set_ylabel(labels[0])
