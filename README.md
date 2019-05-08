@@ -35,5 +35,5 @@ If the algorithm has run at least once, and you have already produced weights sa
 In the file `simulation.png`, you should obtained the following figure:
 ![reference simulation](simulation_ref.png)
 
-<a name="myfootnote1">1</a>: For MacOS, the `pythonw` was used after installion through `conda install python.app`
+<a name="myfootnote1">1</a>: For MacOS, the `pythonw` was used after installation through `conda install python.app`
 
