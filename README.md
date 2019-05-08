@@ -30,7 +30,7 @@ The output of the code are saved on the `example_data` directory:
 - `weights_nn.h5`: weights of the neural network after optimization
 - `simulation.png`: figure showing one simulation of 5 unit time steps (about 8 Lyapunov time steps).
 
-If the algorithm has run at least once, and you have already produced weights saved in `example_data/weights_nn.h5`, you can run the code [plot_simu.py](plot_simu.py) to load the weights and make only a simulation and a plot without the long optimization setup: `python plot_simu.py`
+If the algorithm has run at least once, and you have already produced weights saved in `example_data/weights_nn.h5`, you can run the code [plot_simu.py](plot_simu.py) to load the weights, make a simulation and a plot without the long optimization process: `python plot_simu.py`
 
 In the file `simulation.png`, you should obtained the following figure:
 ![reference simulation](simulation_ref.png)
