@@ -1,26 +1,24 @@
-from common import *
-from mods.Lorenz95.core import step, dfdx
-from keras import backend as K
+from dapper.mods.Lorenz96 import step
+from dapper.mods import HiddenMarkovModel, Id_mat, Id_op, Chronology, ens_compatible  #former TwinSetup
+from dapper.tools.progressbar import progbar
 import numpy as np
-from tools.admin import TwinSetup
-from keras.layers import Input, Lambda, BatchNormalization, Conv1D, Dropout, Add, Multiply, Concatenate
-from keras.constraints import maxnorm
-from keras.models import Model
-from keras import regularizers
-from keras.callbacks import EarlyStopping
+import tensorflow as tf
+from tensorflow.keras.layers import Input, Lambda, BatchNormalization, Conv1D, Dropout, Add, Multiply, Concatenate
+from tensorflow.keras.constraints import max_norm
+from tensorflow.keras.models import Model
+from tensorflow.keras import regularizers
+from tensorflow.keras.callbacks import EarlyStopping
 import warnings
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg') #change to activate a GUI matplotlib backend
 from sklearn.linear_model import Ridge
-from tools.randvars import RV, GaussRV
-from tools.math import Id_mat
-from common import Chronology
-from tools.math import ens_compatible
+from dapper.tools.randvars import RV, GaussRV
 from scipy.interpolate import griddata
 from inspect import signature
 import pickle
-
+import os
+from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 
 ######################
 # Lorenz Model utils #
@@ -34,26 +32,24 @@ m = 40
 
 # Dict of the model
 f = {
-	'm'    : m,
+	'M'    : m,
 	'model': step,
-	'jacob': dfdx,
 	'noise': 0
 	}
 # Init of the model
-X0 = GaussRV(m=m, C=0.001)
+X0 = GaussRV(M=m, C=0.001)
 
 # 0bservation operator
 h = {
-	'm'    : m,
+	'M'    : m,
 	'model': Id_op(),
 	'jacob': Id_mat(m),
 	'noise': 1, # abbrev GaussRV(C=CovMat(eye(m)))
-	'plot' : lambda y: plt.plot(y,'g')[0]
 	}
 
 
 other = {'name': os.path.relpath(__file__,'mods/')}
-setup = TwinSetup(f,h,t,X0,**other)
+setup = HiddenMarkovModel(f,h,t,X0,**other)
 
 ####################
 # Simulation utils #
@@ -64,18 +60,18 @@ def simulate_ens(setup,N=1,desc='Simul',squeeze=True,Xinit=None):
 	"""Generate a simulation on a ensemble (default=1)
 	if squeeze is True and N==1, the output is squeeze on the ens dim
 	if Xinit is not None, use Xinit as initial state instead of X0 generator"""
-	f,h,chrono,X0 = setup.f, setup.h, setup.t, setup.X0
+	f,h,chrono,X0 = setup.Dyn, setup.Obs, setup.t, setup.X0
 # Init
 
-	xx    = zeros((chrono.K+1,N,f.m))
+	xx    = np.zeros((chrono.K+1,N,f.M))
 	if Xinit is None:
 		xx[0] = X0.sample(N)
 	else:
 		xx[0] = Xinit
 
 # Loop
-	for k,kObs,t,dt in progbar(chrono.forecast_range,desc):
-		xx[k] = f(xx[k-1],t-dt,dt) + sqrt(dt)*f.noise.sample(1)
+	for k,kObs,t,dt in progbar(chrono.ticker,desc):
+		xx[k] = f(xx[k-1],t-dt,dt) + np.sqrt(dt)*f.noise.sample(1)
 
 	if N == 1 and squeeze:
 		xx = xx[:,0,:]
@@ -96,13 +92,13 @@ def keras_padding ( v ):
 	def padlayer ( x ):
 		leftborder = x[..., -vleft:, :]
 		rigthborder = x[..., :vright, :]
-		return K.concatenate([leftborder, x, rigthborder], axis=-2)
+		return tf.concat([leftborder, x, rigthborder], axis=-2)
 
 	return padlayer
 
 # Add an artificial feature (to handle the weights in the cost function)
 def dummy_feature( x ):
-	return K.concatenate([x,x],axis=-1)
+	return tf.concat([x,x],axis=-1)
 
 # Define a several step recursive model
 def RecModel(rkmodel,nb_timestep,output_sequence=True):
@@ -147,8 +143,8 @@ def make_train ( xa, nseq=1, burnin=40 ,weights = None):
 #Design cost function
 def weighted_mse(y_true,y_pred):
 	val_true, weight = y_true[...,0:1], y_true[...,1:]
-	sq = K.square(y_pred - val_true) * weight
-	return K.mean(sq)
+	sq = tf.math.square(y_pred - val_true) * weight
+	return tf.reduce_mean(sq)
 
 #Check if a layer is linear
 def islinear(layer):
@@ -381,8 +377,8 @@ class NNPredictor:
 		:return: the DAPPER object setup
 		"""
 		stepnn = stepmodel2(self._smodel)
-		fnn = { 'm': self.m, 'model': stepnn, 'noise': noise, 'nn': self._smodel }
-		setup = TwinSetup(fnn,setup_ref.h,setup_ref.t,setup_ref.X0)
+		fnn = { 'M': self.m, 'model': stepnn, 'noise': noise, 'nn': self._smodel }
+		setup = HiddenMarkovModel(fnn,setup_ref.Obs,setup_ref.t,setup_ref.X0)
 		return setup
 	def plot_history( self ,normalized=True):
 		"""
@@ -402,7 +398,7 @@ class NNPredictor:
 		:return: the number of trainable weights in the neural net
 		"""
 		return int(
-	np.sum([K.count_params(p) for p in set(self._smodel.trainable_weights)]))
+	np.sum([tf.keras.backend.count_params(p) for p in set(self._smodel.trainable_weights)]))
 	def check_finetuning( self ):
 		""" Check if finetuning is possible, i.e. last layer is a sum and -2 layer is linear"""
 		return isinstance(self._smodel.layers[-1],Add) \
@@ -493,7 +489,7 @@ class NNPredictor:
 class SetupBuilder:
 	def __init__( self,t=None,fname='./data2/L96_train_51.npz',seed_sample=1,
 			std_o=1,p=20,sample='random',seed_obs=2,
-			m=40,step=step,dfdx=dfdx,data=None):
+			m=40,step=step,data=None):
 		"""
 		Classe allowing the save and generation of the DAPPER setup object
 		:param t: chronology of the setup
@@ -505,7 +501,6 @@ class SetupBuilder:
 		:param seed_obs: seed fo rendom generator of noise on observations
 		:param m: size of the step
 		:param step: forecast function for one time step
-		:param dfdx: linear tangent
 		:param data: array in which chosing initial states (replace fname if specified)
 		"""
 		if t is None:
@@ -521,7 +516,6 @@ class SetupBuilder:
 		self.seed_obs = seed_obs
 		self.m = m
 		self.step = step
-		self.dfdx = dfdx
 		if data is not None:
 			self.data = data
 		else:
@@ -555,7 +549,7 @@ class SetupBuilder:
 		self.tinds = dict()
 		save_state = np.random.get_state()
 		np.random.seed(self.seed_obs)
-		for k, KObs, t_, dt in self.t.forecast_range:
+		for k, KObs, t_, dt in self.t.ticker:
 			if KObs is not None:
 				if self.sample == 'random':
 					self.tinds[t_] = np.random.choice(self.m, size=self.p, replace=False)
@@ -583,7 +577,7 @@ class SetupBuilder:
 		if chrono is None:
 			chrono = self.t
 		Xobs = np.nan * np.ones(shape=(chrono.K + 1, self.m))
-		for k, KObs, t_, dt in chrono.forecast_range:
+		for k, KObs, t_, dt in chrono.ticker:
 			if KObs is not None:
 				Xobs[k, self.tinds[t_]] = yy[KObs]
 		return Xobs
@@ -597,7 +591,7 @@ class SetupBuilder:
 		if chrono is None:
 			chrono = self.t
 		MaskObs = np.zeros(shape=(chrono.K + 1,self.m)).astype(bool)
-		for k, KObs, t_, dt in chrono.forecast_range:
+		for k, KObs, t_, dt in chrono.ticker:
 			MaskObs[k,self.tinds[t_]] = True
 		return MaskObs
 
@@ -637,7 +631,7 @@ class SetupBuilder:
 		"""
 		:return: Dictionnary corresponding to the observation operator in the DAPPER format
 		"""
-		h = { 'm': self.p,
+		h = { 'M': self.p,
 			'model': self.def_hmod(),
 			'jacob': Id_mat(self.p),
 			'noise': GaussRV(C=self.std_o * np.eye(self.p))}
@@ -647,16 +641,15 @@ class SetupBuilder:
 		"""
 		:return: Dictionnary corresponding the the model operator in the DAPPER format
 		"""
-		fref = { 'm': self.m,
+		fref = { 'M': self.m,
 			'model': self.step,
-			'jacob': self.dfdx,
 			'noise': 0 }
 		return fref
 	def setup( self ):
 		"""
 		:return: the setup object in the DAPPER format
 		"""
-		return TwinSetup(self.f_dict(),self.h_dict(),self.t,self.X0())
+		return HiddenMarkovModel(self.f_dict(),self.h_dict(),self.t,self.X0())
 
 	def get_params_dict( self ):
 		"""

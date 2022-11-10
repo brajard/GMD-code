@@ -1,8 +1,6 @@
 #from DAPPER.mods.Lorenz95.sak08 import setup as setup_lorenz
 import os
-import numpy as np
-from common import simulate, Chronology
-from da_methods import EnKF_N
+from dapper.mods import Chronology
 
 from utils import setup as setup_lorenz
 from utils import simulate_ens, NNPredictor, SetupBuilder, plot_L96_2D
@@ -43,7 +41,7 @@ sb = SetupBuilder(t=Chronology(0.05, dkObs=1, T=Texpe, BurnIn=1),
 
 # Define the setup run for the true simulation:
 setup_true = sb.setup()
-xtrue, yobs = simulate(setup_true)
+xtrue, yobs = setup_true.simulate()
 # NB: the config can be saved using sb.save(...)
 
 

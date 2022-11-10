@@ -8,17 +8,11 @@ A example script is provided to run the "reference setup" described in the paper
 ## Installation
 
 Tested on Linux/MacOS<sup>[1](#myfootnote1)</sup>
-1. Prerequisiste: `python3.5+` (suggest setting it up with
+1. Prerequisiste: `python3.9+` (suggest setting it up with
 [anaconda](https://www.anaconda.com/download)).
-2. Download [DAPPER v0.8](https://github.com/nansencenter/DAPPER/releases/tag/v0.8) 
-3. Copy the following files in the DAPPER main directory (suggest download the whole [repository](https://github.com/brajard/GMD-code/releases/tag/v1.0)):
-   - [utils.py](utils.py)
-   - [requirements.txt](requirements.txt)
-   - [example.py](example.py)
-   - (optional) [plot_simu.py](plot_simu.py)
-4. Create a directory to save results: `mkdir example_data`
-5. Install the required python modules: `pip install -r requirements.txt`
-6. Run the exemple file (you can modify the file to speed up the run): `python exemple.py`
+2. Create a directory to save results: `mkdir example_data`
+3. Install the required python modules: `pip install -r requirements.txt`
+4. Run the example file  [example.py](example.py)(you can modify the file to speed up the run): `python example.py`
 
 ## Results
 

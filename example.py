@@ -1,7 +1,7 @@
 import os
 import numpy as np
-from common import simulate, Chronology
-from da_methods import EnKF_N
+from dapper.mods import Chronology
+from dapper.da_methods import EnKF_N
 
 from utils import setup as setup_lorenz
 from utils import simulate_ens, NNPredictor, SetupBuilder, plot_L96_2D
@@ -48,7 +48,7 @@ sb = SetupBuilder(t=Chronology(0.05, dkObs=1, T=Texpe, BurnIn=1),
 
 # Define the setup run for the true simulation:
 setup_true = sb.setup()
-xtrue, yobs = simulate(setup_true)
+xtrue, yobs = setup_true.simulate()
 # NB: the config can be saved using sb.save(...)
 
 ###########################
@@ -69,7 +69,8 @@ param_nn = {'archi': ((24, 5, 'relu', 0.0), (37, 5, 'relu', 0.0)),  # CNN layer 
 	'finetuning': False,  # Deactivate a finetuning of the last layer after optimization
 	'npred': 1,  # Number of forecast time step in the loss function
 	'Nepochs': nepochs,  # Number of epochs
-	'batch_size': 256  # Batchsize during the training
+	'batch_size': 256,  # Batchsize during the training
+	'Ntrain':1500
 }
 nn = NNPredictor(m, **param_nn)
 
@@ -86,7 +87,7 @@ xinterp = sb.interpolate_obs(xobs)
 
 # Calculate the inverse of variance in the loss fuction
 # (1 if there is an obs, 0 otherwise):
-weights = np.logical_not(np.isnan(xobs)).astype(np.float)
+weights = np.logical_not(np.isnan(xobs)).astype(float)
 
 # Define a particular machine learning setup for the init
 param_first_nn = param_nn.copy()
@@ -117,10 +118,10 @@ for icycle in range(ncycle):
 	# NB: The setup_true is use only for the observational setup, not for the model definition
 
 	# Run the assimilation:
-	stats = config.assimilate(setup, xtrue, yobs)
+	config.assimilate(setup, xtrue, yobs)
 
-	xa = stats.mu.a  # Analysis
-	weights = 1. / (stats.var.a + 0.01)  # Inverse Covariance matrix (only diagonal)
+	xa = config.stats.mu.a  # Analysis
+	weights = 1. / (config.stats.std.a**2 + 0.01)  # Inverse Covariance matrix (only diagonal)
 	# +0.01 to avoid crash if the DA has degenerated to var =0
 
 	############
