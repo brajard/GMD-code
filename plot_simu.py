@@ -8,17 +8,17 @@ from utils import simulate_ens, NNPredictor, SetupBuilder, plot_L96_2D
 #################
 # General Setup #
 #################
+
+N = 100 # Ensemble size
+datadir = 'example_data'  # Directory where to save the results
+weights1 = 'weights_init.h5'
 m = 40  # size of the state space
 p = 20  # Number of obs at each time step (50%)
-std_m = 0.1  # standard deviation of model noise
+#std_m = 0.1  # standard deviation of model noise
 std_o = 1.  # standard devation of observational noise
-
-ncycle = 40  # Number of cycles
-nepochs_init = 40 # Number of epochs for initializing the weights
-nepochs = 20 # Number of epochs during training in a cycle
 Texpe = 2000 # Length of the experiment in model time unit
 
-datadir = 'example_data'  # Directory where to save the results
+
 ######################
 # Initial simulation #
 ######################
@@ -41,7 +41,7 @@ sb = SetupBuilder(t=Chronology(0.05, dkObs=1, T=Texpe, BurnIn=1),
 
 # Define the setup run for the true simulation:
 setup_true = sb.setup()
-xtrue, yobs = setup_true.simulate()
+#xtrue, yobs = setup_true.simulate()
 # NB: the config can be saved using sb.save(...)
 
 
@@ -62,7 +62,7 @@ param_nn = {'archi': ((24, 5, 'relu', 0.0), (37, 5, 'relu', 0.0)),  # CNN layer 
 nn = NNPredictor(m, **param_nn)
 
 # Load the neural net with  weights
-nn._smodel.load_weights(os.path.join(datadir, 'weights_nn.h5'))
+nn._smodel.load_weights(os.path.join(datadir, weights1))
 
 
 ########
@@ -79,9 +79,9 @@ setup.t.T = 5.
 setup_true.t.T = 5.
 
 # simulation
-xsim_true      = simulate_ens(setup_true, Xinit=x0)
-xsim_surrogate = simulate_ens(setup, Xinit=x0)
+xsim_true      = simulate_ens(setup_true, N=N, Xinit=x0)
+xsim_surrogate = simulate_ens(setup, N=N, Xinit=x0)
 
 # plot
-fig = plot_L96_2D(xsim_true, xsim_surrogate, 1.67*setup_true.t.tt, labels=['True','Surrogate'])
-fig.savefig(os.path.join(datadir, 'simulation.png'))
+fig = plot_L96_2D(xsim_true[:,0], xsim_surrogate[:,0], 1.67*setup_true.t.tt, labels=['True','Surrogate'])
+fig.savefig(os.path.join(datadir, 'simulation2.png'))

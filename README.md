@@ -8,7 +8,7 @@ A example script is provided to run the "reference setup" described in the paper
 ## Installation
 
 Tested on Linux/MacOS<sup>[1](#myfootnote1)</sup>
-1. Prerequisiste: `python3.9+` (suggest setting it up with
+1. Prerequisiste: `python3.8` (suggest setting it up with
 [anaconda](https://www.anaconda.com/download)).
 2. Create a directory to save results: `mkdir example_data`
 3. Install the required python modules: `pip install -r requirements.txt`
